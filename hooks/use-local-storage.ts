@@ -1,11 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getItem, getStorageKey, removeItem, setItem, STORAGE_CHANGE_EVENT } from "@/lib/storage";
 
 export function useLocalStorage<T>(key: string, fallback: T) {
   const [value, setValue] = useState<T>(fallback);
   const [ready, setReady] = useState(false);
+  const fallbackRef = useRef(fallback);
+  fallbackRef.current = fallback;
+  const writingRef = useRef(false);
 
   useEffect(() => {
     const stored = getItem<T>(key);
@@ -19,7 +22,7 @@ export function useLocalStorage<T>(key: string, fallback: T) {
     const syncFromStorage = () => {
       const latest = getItem<T>(key);
       if (latest === null) {
-        setValue(fallback);
+        setValue(fallbackRef.current);
         return;
       }
       setValue(latest);
@@ -31,6 +34,7 @@ export function useLocalStorage<T>(key: string, fallback: T) {
     };
 
     const handleCustomStorage = (event: Event) => {
+      if (writingRef.current) return;
       const detail = (event as CustomEvent<{ key?: string }>).detail;
       if (!detail?.key || detail.key !== key) return;
       syncFromStorage();
@@ -43,13 +47,15 @@ export function useLocalStorage<T>(key: string, fallback: T) {
       window.removeEventListener("storage", handleStorage);
       window.removeEventListener(STORAGE_CHANGE_EVENT, handleCustomStorage);
     };
-  }, [fallback, key]);
+  }, [key]);
 
   const update = useCallback(
     (next: T | ((prev: T) => T)) => {
       setValue((prev) => {
         const resolved = typeof next === "function" ? (next as (v: T) => T)(prev) : next;
+        writingRef.current = true;
         setItem(key, resolved);
+        writingRef.current = false;
         return resolved;
       });
     },
@@ -57,9 +63,11 @@ export function useLocalStorage<T>(key: string, fallback: T) {
   );
 
   const clear = useCallback(() => {
-    setValue(fallback);
+    writingRef.current = true;
+    setValue(fallbackRef.current);
     removeItem(key);
-  }, [fallback, key]);
+    writingRef.current = false;
+  }, [key]);
 
   return { value, setValue: update, clear, ready };
 }

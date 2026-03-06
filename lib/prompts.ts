@@ -36,7 +36,7 @@ export function buildChatSystemPrompt(references?: string): string {
   if (references) {
     return GEOLOGY_SYSTEM_PROMPT + "\n\n---\n用户文献库：\n" + references;
   }
-  return GEOLOGY_SYSTEM_PROMPT + "\n\n---\n（用户文献库为空，请勿编造任何文献引用。如需引用文献，请建议用户使用"文献搜索"功能。）";
+  return GEOLOGY_SYSTEM_PROMPT + "\n\n---\n（用户文献库为空，请勿编造任何文献引用。如需引用文献，请建议用户使用\"文献搜索\"功能。）";
 }
 
 export const POLISH_TRANSLATE_PROMPT = `

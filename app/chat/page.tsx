@@ -130,8 +130,9 @@ export default function ChatPage() {
       }))
       .filter((m) => m.content.trim().length > 0);
 
-    setSessions((prev) =>
-      prev.map((session) => {
+    setSessions((prev) => {
+      let changed = false;
+      const next = prev.map((session) => {
         if (session.id !== activeId) return session;
         const nextTitle =
           session.title === "新对话" && normalizedMessages[0]
@@ -144,6 +145,7 @@ export default function ChatPage() {
           return session;
         }
 
+        changed = true;
         return {
           ...session,
           model,
@@ -151,8 +153,9 @@ export default function ChatPage() {
           messages: normalizedMessages,
           updatedAt: Date.now(),
         };
-      })
-    );
+      });
+      return changed ? next : prev;
+    });
   }, [activeId, messages, model, setSessions]);
 
   function createSession() {
