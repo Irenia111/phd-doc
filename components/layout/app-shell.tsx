@@ -25,14 +25,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       ) : null}
-      <div className="flex min-h-screen flex-1 flex-col">
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col">
         <Header onMenuClick={() => setMobileOpen(true)} />
         {status !== "configured" && needsKey ? (
           <div className="border-b border-amber-200 bg-amber-50 px-6 py-2 text-sm text-amber-700">
             当前页面需要 API Key。请先前往设置页完成配置。
           </div>
         ) : null}
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 overflow-x-hidden p-6">{children}</main>
       </div>
       <Toaster />
     </div>

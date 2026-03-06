@@ -13,7 +13,7 @@ import { Select } from "@/components/ui/select";
 import { useApiKey } from "@/hooks/use-api-key";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { DEFAULT_MODEL, getModelDescription, getModelOptionLabel, MODEL_OPTIONS } from "@/lib/models";
-import { ChatMessage, ChatSession, UserPreferences } from "@/types";
+import { ChatMessage, ChatSession, Reference, UserPreferences } from "@/types";
 
 const defaultPreferences: UserPreferences = {
   defaultModel: DEFAULT_MODEL,
@@ -43,17 +43,26 @@ export default function ChatPage() {
   const { apiKey, status } = useApiKey();
   const { value: preferences } = useLocalStorage<UserPreferences>("preferences", defaultPreferences);
   const { value: sessions, setValue: setSessions } = useLocalStorage<ChatSession[]>("chat-sessions", []);
+  const { value: savedReferences } = useLocalStorage<Reference[]>("references", []);
   const [activeId, setActiveId] = useState<string>("");
   const [model, setModel] = useState(preferences.defaultModel || DEFAULT_MODEL);
   const [customModel, setCustomModel] = useState(preferences.defaultModel || DEFAULT_MODEL);
   const [input, setInput] = useState("");
+  const referencesContext = useMemo(() => {
+    const verified = savedReferences.filter((r) => r.verified);
+    if (!verified.length) return "";
+    return verified
+      .map((r) => `- ${r.authors} (${r.year}). ${r.title}. ${r.journal}.${r.doi ? ` DOI: ${r.doi}` : ""}`)
+      .join("\n");
+  }, [savedReferences]);
+
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
         api: "/api/chat",
-        body: { apiKey, model },
+        body: { apiKey, model, references: referencesContext },
       }),
-    [apiKey, model]
+    [apiKey, model, referencesContext]
   );
   const chatId = `${activeId || "default"}:${model}:${apiKey ? "configured" : "missing"}`;
   const { messages, setMessages, sendMessage, stop, status: chatStatus } = useChat({
@@ -181,8 +190,8 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
-      <Card className="space-y-3">
+    <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
+      <Card className="min-w-0 space-y-3">
         <Button onClick={createSession}>新建对话</Button>
         <Select
           value={model}
@@ -228,8 +237,11 @@ export default function ChatPage() {
         </div>
       </Card>
 
-      <div className="space-y-4">
-        <ChatMessages messages={messages.map((m) => ({ id: m.id, role: m.role, content: toPlainContent(m) }))} />
+      <div className="min-w-0 space-y-4">
+        <ChatMessages
+          messages={messages.map((m) => ({ id: m.id, role: m.role, content: toPlainContent(m) }))}
+          hasReferences={savedReferences.filter((r) => r.verified).length > 0}
+        />
         <ChatInput
           value={input}
           onChange={setInput}
