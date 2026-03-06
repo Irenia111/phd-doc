@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { getItem, removeItem, setItem } from "@/lib/storage";
+import { getItem, getStorageKey, removeItem, setItem, STORAGE_CHANGE_EVENT } from "@/lib/storage";
 
 export function useLocalStorage<T>(key: string, fallback: T) {
   const [value, setValue] = useState<T>(fallback);
@@ -15,7 +15,35 @@ export function useLocalStorage<T>(key: string, fallback: T) {
       setValue(stored);
     }
     setReady(true);
-  }, [key]);
+
+    const syncFromStorage = () => {
+      const latest = getItem<T>(key);
+      if (latest === null) {
+        setValue(fallback);
+        return;
+      }
+      setValue(latest);
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key !== getStorageKey(key)) return;
+      syncFromStorage();
+    };
+
+    const handleCustomStorage = (event: Event) => {
+      const detail = (event as CustomEvent<{ key?: string }>).detail;
+      if (!detail?.key || detail.key !== key) return;
+      syncFromStorage();
+    };
+
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener(STORAGE_CHANGE_EVENT, handleCustomStorage);
+
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener(STORAGE_CHANGE_EVENT, handleCustomStorage);
+    };
+  }, [fallback, key]);
 
   const update = useCallback(
     (next: T | ((prev: T) => T)) => {

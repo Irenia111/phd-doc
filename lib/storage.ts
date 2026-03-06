@@ -1,5 +1,6 @@
 const STORAGE_PREFIX = "phd-doc:";
 const STORAGE_VERSION = 1;
+export const STORAGE_CHANGE_EVENT = "phd-doc:storage-change";
 
 type Storable<T> = {
   version: number;
@@ -10,6 +11,10 @@ type Storable<T> = {
 function keyOf(key: string) {
   if (key.startsWith(STORAGE_PREFIX)) return key;
   return `${STORAGE_PREFIX}${key}`;
+}
+
+export function getStorageKey(key: string) {
+  return keyOf(key);
 }
 
 function isBrowser() {
@@ -44,10 +49,12 @@ export function setItem<T>(key: string, value: T): void {
     updatedAt: Date.now(),
     data: value,
   };
-  localStorage.setItem(keyOf(key), JSON.stringify(payload));
+  localStorage.setItem(getStorageKey(key), JSON.stringify(payload));
+  window.dispatchEvent(new CustomEvent(STORAGE_CHANGE_EVENT, { detail: { key } }));
 }
 
 export function removeItem(key: string): void {
   if (!isBrowser()) return;
-  localStorage.removeItem(keyOf(key));
+  localStorage.removeItem(getStorageKey(key));
+  window.dispatchEvent(new CustomEvent(STORAGE_CHANGE_EVENT, { detail: { key } }));
 }
