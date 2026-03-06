@@ -17,7 +17,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen">
-      <Sidebar className="hidden md:block" />
+      <Sidebar className="hidden md:block sticky top-0 h-screen overflow-y-auto shrink-0" />
       {mobileOpen ? (
         <div className="fixed inset-0 z-40 bg-black/30 md:hidden" onClick={() => setMobileOpen(false)}>
           <div onClick={(event) => event.stopPropagation()}>
